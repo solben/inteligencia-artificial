@@ -124,51 +124,93 @@ Alcalá de Henares,40.4818,-3.3639
 
 ```
 inteligencia-artificial/
-├── README.md                    # Este archivo
-├── ciudades_madrid.csv         # Dataset de ciudades de Madrid
-├── src/                        # Código fuente (próximamente)
-│   ├── algorithms/             # Implementaciones de algoritmos
-│   │   ├── exact/             # Algoritmos exactos
-│   │   ├── heuristics/        # Heurísticas constructivas
-│   │   └── metaheuristics/    # Metaheurísticas
-│   ├── utils/                 # Utilidades y helpers
-│   └── visualization/         # Herramientas de visualización
-├── examples/                   # Ejemplos de uso
-├── tests/                     # Pruebas unitarias
-├── results/                   # Resultados de experimentos
-└── docs/                      # Documentación adicional
+├── README.md                   # Documentación del proyecto
+└── ciudades_madrid.csv        # Dataset de ciudades de Madrid
 ```
+
+> **Nota**: Este repositorio actualmente contiene la documentación y dataset base. Las implementaciones de algoritmos y análisis pueden ser desarrolladas como extensiones futuras del proyecto.
 
 ## 🚀 Instalación y Uso
 
-### Prerrequisitos
-```bash
-python >= 3.8
-numpy
-pandas
-matplotlib
-scipy
-```
+### Para trabajar con el dataset
 
-### Instalación
-```bash
-git clone https://github.com/solben/inteligencia-artificial.git
-cd inteligencia-artificial
-pip install -r requirements.txt
-```
-
-### Uso Básico
 ```python
-from src.algorithms.heuristics import nearest_neighbor
-from src.utils.data_loader import load_cities
+import pandas as pd
+import numpy as np
+from math import radians, cos, sin, asin, sqrt
 
-# Cargar datos
-cities = load_cities('ciudades_madrid.csv')
+# Cargar el dataset
+df = pd.read_csv('ciudades_madrid.csv')
+print(f"Dataset contiene {len(df)} ciudades")
+print(df.head())
 
-# Resolver usando vecino más cercano
-route, distance = nearest_neighbor(cities)
+# Función para calcular distancia haversine entre dos puntos
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calcula la distancia entre dos puntos en la Tierra
+    usando la fórmula haversine
+    """
+    # Convertir grados a radianes
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    
+    # Fórmula haversine
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371  # Radio de la Tierra en kilómetros
+    
+    return c * r
 
-print(f"Ruta encontrada: {route}")
+# Ejemplo: calcular distancia entre Madrid y Alcalá de Henares
+madrid = df[df['Ciudad'] == 'Madrid'].iloc[0]
+alcala = df[df['Ciudad'] == 'Alcalá de Henares'].iloc[0]
+
+distancia = haversine(madrid['Longitud'], madrid['Latitud'], 
+                     alcala['Longitud'], alcala['Latitud'])
+print(f"Distancia Madrid-Alcalá: {distancia:.2f} km")
+```
+
+### Implementación básica del algoritmo Vecino más Cercano
+
+```python
+def nearest_neighbor_tsp(cities_df):
+    """
+    Implementación básica del algoritmo Vecino más Cercano para TSP
+    """
+    n = len(cities_df)
+    cities = cities_df.values
+    
+    # Comenzar desde la primera ciudad
+    unvisited = set(range(1, n))
+    current = 0
+    route = [current]
+    total_distance = 0
+    
+    while unvisited:
+        nearest = min(unvisited, 
+                     key=lambda city: haversine(cities[current][2], cities[current][1],
+                                               cities[city][2], cities[city][1]))
+        
+        distance = haversine(cities[current][2], cities[current][1],
+                           cities[nearest][2], cities[nearest][1])
+        
+        total_distance += distance
+        route.append(nearest)
+        unvisited.remove(nearest)
+        current = nearest
+    
+    # Regresar al inicio
+    final_distance = haversine(cities[current][2], cities[current][1],
+                              cities[0][2], cities[0][1])
+    total_distance += final_distance
+    route.append(0)
+    
+    return route, total_distance
+
+# Usar con el dataset
+route, distance = nearest_neighbor_tsp(df)
+print(f"Ruta encontrada: {[df.iloc[i]['Ciudad'] for i in route]}")
 print(f"Distancia total: {distance:.2f} km")
 ```
 
@@ -184,8 +226,11 @@ print(f"Distancia total: {distance:.2f} km")
 | 2-opt | O(n²) | ~5% error | Buena | Mejora local |
 | Genético | O(generaciones) | ~3% error | Buena | Solución robusta |
 
-### Benchmarks
-*(Los resultados específicos se actualizarán conforme se implementen los algoritmos)*
+### Análisis del Dataset Madrid
+- **Número de ciudades**: Variable según el dataset
+- **Área geográfica**: Comunidad de Madrid
+- **Reto computacional**: Perfecto para algoritmos heurísticos
+- **Aplicación práctica**: Optimización de rutas de distribución en Madrid
 
 ## 🎓 Contexto Académico
 
@@ -211,14 +256,23 @@ Las contribuciones son bienvenidas. Por favor:
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Abre un Pull Request
 
-### Áreas de Contribución
-- Implementación de nuevos algoritmos
-- Optimización de algoritmos existentes
-- Nuevos datasets
-- Visualizaciones
-- Documentación
-- Tests unitarios
-- Análisis comparativos
+### Áreas de Contribución Sugeridas
+- Implementación de algoritmos TSP
+- Análisis del dataset de Madrid
+- Visualizaciones de rutas
+- Comparativas de rendimiento
+- Nuevos datasets de ciudades
+- Documentación y tutoriales
+- Tests y validaciones
+
+## 🚀 Ideas para Desarrollo Futuro
+
+- **Implementar algoritmos clásicos**: Fuerza bruta, vecino más cercano, 2-opt
+- **Visualización de rutas**: Mapas interactivos con las rutas optimizadas
+- **Comparativas de rendimiento**: Benchmarks entre diferentes algoritmos
+- **Interfaz web**: Aplicación para visualizar soluciones TSP
+- **Extensión de datasets**: Agregar más ciudades españolas o europeas
+- **Algoritmos avanzados**: Implementar metaheurísticas como algoritmos genéticos
 
 ## 📚 Recursos Adicionales
 
